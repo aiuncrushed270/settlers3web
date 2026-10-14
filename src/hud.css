@@ -25,3 +25,15 @@
 .bar-btn { padding: 8px 0; border: 2px solid #7d6422; background: #17243f; color: #e8dcae; font-size: 16px; cursor: pointer; }
 .bar-btn:hover { border-color: #f2d56b; background: #22355c; }
 canvas { touch-action: none; }
+.cats { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 6px; }
+.cat { padding: 4px 2px; border: 1px solid #7d6422; background: #17243f; color: #e8dcae; font-size: 10px; cursor: pointer; }
+.cat.active, .cat:hover { border-color: #f2d56b; background: #22355c; }
+.blist { display: flex; flex-direction: column; gap: 3px; }
+.bitem { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 6px; border: 1px solid #4d4020; background: #101c3a; color: #e8dcae; cursor: pointer; text-align: left; }
+.bitem:hover { border-color: #f2d56b; }
+.bitem.sel { border-color: #f2d56b; background: #2c4478; }
+.bitem.poor { opacity: .5; }
+.bname { font-size: 12px; font-weight: 700; }
+.bcost { font-size: 10px; color: #c9a23c; }
+.message { min-height: 15px; font-size: 11px; color: #f2d56b; padding: 0 2px; }
+.hud .row .v { font-size: 13px; }

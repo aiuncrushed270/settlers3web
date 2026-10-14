@@ -1,9 +1,9 @@
 import Camera, { GROUND_Y } from "./camera.ts";
 import World, { landscapeColor } from "./world.ts";
 import type { MapInfo } from "./types.ts";
+import GameState, { CATEGORIES, GOOD_NAMES, SETTLER_NAMES, type BuildingDef } from "./state.ts";
 
 export const PANEL_WIDTH = 224;
-const GOODS_NAMES: Record<string, string> = {LG: "Low goods", MG: "Medium goods", HG: "High goods"};
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", text?: string): HTMLElementTagNameMap[K]
 {
@@ -28,8 +28,19 @@ export default class Hud
 	private scale: number;
 	private dragging = false;
 
-	constructor(private world: World, private camera: Camera, info: MapInfo)
+	private tab = "build";
+	private category = 0;
+	private selected: BuildingDef | null = null;
+	private content = el("div", "tab-content");
+	private info: MapInfo;
+	private lastRefresh = 0;
+	private signature = "";
+	private message = el("div", "message");
+
+	constructor(private world: World, private camera: Camera, info: MapInfo, private state: GameState,
+		private onSelect: (def: BuildingDef | null) => void)
 	{
+		this.info = info;
 		const data = world.data;
 		this.root.style.width = PANEL_WIDTH + "px";
 
@@ -40,7 +51,7 @@ export default class Hud
 		mm.append(this.minimap);
 
 		const tabs = el("div", "tabs");
-		const content = el("div", "tab-content");
+		const content = this.content;
 		const buttons = TABS.map(t => {
 			const b = el("button", "tab");
 			b.type = "button";
@@ -48,43 +59,102 @@ export default class Hud
 			b.append(el("span", "glyph", t.glyph), el("span", "tab-label", t.label));
 			b.onclick = () => {
 				buttons.forEach(o => o.classList.toggle("active", o === b));
-				this.showTab(content, t.id, info);
+				this.tab = t.id;
+				this.refresh();
 			};
 			return b;
 		});
 		tabs.append(...buttons);
 
 		const bar = el("div", "bar");
-		for(const [glyph, label] of [["⚔", "Militär"], ["≡", "Statistik"], ["✉", "Nachrichten"], ["☰", "Menü"]]) {
+		const barActions: [string, string, () => void][] = [
+			["⚔", "Militär (noch nicht verfügbar)", () => {}],
+			["≡", "Karteninfo", () => { this.tab = "info"; buttons.forEach(o => o.classList.remove("active")); this.refresh(); }],
+			["✉", "Nachrichten (noch nicht verfügbar)", () => {}],
+			["☰", "Spiel verlassen", () => location.reload()],
+		];
+		for(const [glyph, label, action] of barActions) {
 			const b = el("button", "bar-btn", glyph);
 			b.type = "button";
 			b.title = label;
+			b.onclick = action;
 			bar.append(b);
 		}
 
-		this.root.append(mm, tabs, content, bar);
+		this.root.append(mm, tabs, content, this.message, bar);
 		buttons[0].click();
 
 		this.base = this.renderMinimapBase();
 		this.bindMinimap();
 	}
 
-	private showTab(content: HTMLElement, id: string, info: MapInfo): void
+	setMessage(text: string): void
 	{
-		const data = this.world.data;
-		const rows: [string, string][] = id === "build" ? [
-			["Map", info.n],
-			["Author", info.a],
-			["Size", `${data.size} × ${data.size}`],
-			["Players", String(data.players.length || info.p)],
-			["Goods", GOODS_NAMES[info.g] ?? info.g],
-		] : [["Not available yet", "This tab opens once buildings and settlers are implemented."]];
+		this.message.textContent = text;
+	}
 
-		content.replaceChildren(...rows.map(([k, v]) => {
+	deselect(): void
+	{
+		this.selected = null;
+		this.onSelect(null);
+		this.refresh();
+	}
+
+	// rebuilds the tab content; cheap enough to call a few times per second
+	refresh(): void
+	{
+		const rows = (list: [string, string][]) => list.map(([k, v]) => {
 			const row = el("div", "row");
 			row.append(el("span", "k", k), el("span", "v", v));
 			return row;
-		}));
+		});
+		// rebuilding the DOM swallows clicks that are in flight, so only do it when something changed
+		const sig = JSON.stringify([this.tab, this.category, this.selected?.id, this.state.stock, this.state.settlers, this.info.n]);
+		if(sig === this.signature) return;
+		this.signature = sig;
+
+		const content = this.content;
+		const scroll = content.scrollTop;
+
+		if(this.tab === "build") {
+			const cats = el("div", "cats");
+			CATEGORIES.forEach((c, i) => {
+				const b = el("button", "cat" + (i === this.category ? " active" : ""), c.label);
+				b.type = "button";
+				b.onclick = () => { this.category = i; this.refresh(); };
+				cats.append(b);
+			});
+			const list = el("div", "blist");
+			for(const def of CATEGORIES[this.category].buildings) {
+				const b = el("button", "bitem" + (this.state.canAfford(def) ? "" : " poor") + (this.selected === def ? " sel" : ""));
+				b.type = "button";
+				const cost = Object.entries(def.cost).map(([g, n]) => `${n} ${GOOD_NAMES[g] ?? g}`).join(" · ");
+				b.append(el("span", "bname", def.name), el("span", "bcost", cost));
+				b.onclick = () => {
+					this.selected = this.selected === def ? null : def;
+					this.onSelect(this.selected);
+					this.refresh();
+				};
+				list.append(b);
+			}
+			content.replaceChildren(cats, list);
+		}
+		else if(this.tab === "goods") {
+			content.replaceChildren(...rows(Object.entries(GOOD_NAMES).filter(([g]) => this.state.stock[g] !== undefined)
+				.map(([g, name]) => [name, String(this.state.stock[g])])));
+		}
+		else if(this.tab === "settlers") {
+			content.replaceChildren(...rows(Object.entries(SETTLER_NAMES).filter(([g]) => this.state.settlers[g] !== undefined)
+				.map(([g, name]) => [name, String(this.state.settlers[g])])));
+		}
+		else {
+			const data = this.world.data;
+			content.replaceChildren(...rows([
+				["Karte", this.info.n], ["Autor", this.info.a], ["Größe", `${data.size} × ${data.size}`],
+				["Spieler", String(data.players.length || this.info.p)], ["Startwaren", {LG: "Wenig", MG: "Mittel", HG: "Viel"}[this.info.g] ?? this.info.g],
+			]));
+		}
+		content.scrollTop = scroll;
 	}
 
 	private renderMinimapBase(): HTMLCanvasElement
@@ -147,6 +217,12 @@ export default class Hud
 
 	update(): void
 	{
+		const now = performance.now();
+		if(now - this.lastRefresh > 400 && this.tab !== "info") {
+			this.lastRefresh = now;
+			this.refresh();
+		}
+
 		const c = this.minimap.getContext("2d")!;
 		c.drawImage(this.base, 0, 0);
 

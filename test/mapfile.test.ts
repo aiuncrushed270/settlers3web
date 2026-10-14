@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "vitest";
 import { parseMap, checksum } from "../src/mapfile.ts";
 
 function encrypt(data: number[], seed: number): number[]
@@ -33,15 +32,15 @@ test("parses a synthetic map and round-trips the cipher", () => {
 	file.set(le32(checksum(file)), 0);
 
 	const m = parseMap(file);
-	assert.equal(m.size, 2);
-	assert.equal(m.checksumOk, true);
-	assert.equal(m.singlePlayer, false);
-	assert.deepEqual(m.players, [{nation: 0, x: 1, y: 0, name: "Alice"}]);
-	assert.deepEqual([...m.height], [10, 20, 30, 40]);
-	assert.deepEqual([...m.landscape], [0x10, 0, 0x20, 0x30]);
-	assert.equal(m.object[0], 70);
+	expect(m.size).toBe(2);
+	expect(m.checksumOk).toBe(true);
+	expect(m.singlePlayer).toBe(false);
+	expect(m.players).toEqual([{nation: 0, x: 1, y: 0, name: "Alice"}]);
+	expect([...m.height]).toEqual([10, 20, 30, 40]);
+	expect([...m.landscape]).toEqual([0x10, 0, 0x20, 0x30]);
+	expect(m.object[0]).toBe(70);
 });
 
 test("rejects unknown versions", () => {
-	assert.throws(() => parseMap(new Uint8Array(32)), /version/);
+	expect(() => parseMap(new Uint8Array(32))).toThrow(/version/);
 });
