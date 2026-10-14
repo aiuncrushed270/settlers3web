@@ -8,8 +8,8 @@ export default class Shader
 		let frag = gl.createShader(gl.FRAGMENT_SHADER);
 		let prog = gl.createProgram();
 		
-		gl.shaderSource(vert, "#version 300 es\nprecision mediump float;\n" + vertSrc);
-		gl.shaderSource(frag, "#version 300 es\nprecision mediump float;\n" + fragSrc);
+		gl.shaderSource(vert, "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n" + vertSrc);
+		gl.shaderSource(frag, "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n" + fragSrc);
 		
 		gl.compileShader(vert);
 		gl.compileShader(frag);

@@ -1,3 +1,5 @@
+import maps from "./maps.json";
+
 const PAGE_SIZE = 12;
 const MAP_BASE = "https://raw.githubusercontent.com/settlers-united/s3-maps/main/";
 const GOODS = {LG: "Low goods", MG: "Medium goods", HG: "High goods"};
@@ -25,7 +27,6 @@ export default class Menu
 	{
 		this.root = root;
 		this.onStart = onStart;
-		this.maps = null;
 	}
 
 	show(...children)
@@ -65,13 +66,7 @@ export default class Menu
 		this.show(this.title(), menu);
 	}
 
-	async loadMaps()
-	{
-		if(!this.maps) this.maps = await (await fetch(new URL("./maps.json", import.meta.url))).json();
-		return this.maps;
-	}
-
-	async showMaps()
+	showMaps()
 	{
 		const state = {q: "", players: "", goods: "", sort: "new", page: 0, sel: null};
 
@@ -97,11 +92,6 @@ export default class Menu
 		actions.append(button("Zurück", () => this.showMain()), start);
 		panel.append(el("h2", "", "Karte wählen"), filters, grid, pager, actions);
 		this.show(this.title(), panel);
-		grid.append(el("div", "empty", "Loading maps…"));
-
-		let maps;
-		try { maps = await this.loadMaps(); }
-		catch(e) { grid.replaceChildren(el("div", "empty", "Could not load the map list.")); return; }
 
 		const counts = [...new Set(maps.map(m => m.p))].sort((a, b) => a - b);
 		for(const c of counts) players.add(new Option(c + " players", String(c)));

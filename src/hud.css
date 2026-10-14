@@ -1,0 +1,27 @@
+/* In-game panel: blue slate with a gold frame, after the original's left-hand control column */
+.hud {
+	position: fixed; left: 0; top: 0; bottom: 0; z-index: 5; box-sizing: border-box;
+	display: flex; flex-direction: column; gap: 6px; padding: 6px;
+	background: linear-gradient(180deg, #1b2a4a, #101a33 60%, #0b1226);
+	border-right: 3px solid #c9a23c; box-shadow: 4px 0 12px rgba(0,0,0,.5);
+	font-family: Tahoma, Verdana, sans-serif; color: #e8dcae; user-select: none;
+}
+.mm-frame { background: #050914; border: 2px solid #c9a23c; line-height: 0; }
+.minimap { width: 100%; height: auto; cursor: crosshair; touch-action: none; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+	flex: 1; padding: 6px 0; border: 2px solid #7d6422; background: #17243f; color: #e8dcae; cursor: pointer;
+	display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px;
+}
+.tab .glyph { font-size: 20px; line-height: 1; }
+.tab.active, .tab:hover { border-color: #f2d56b; background: #22355c; }
+.tab-content {
+	flex: 1; min-height: 0; overflow-y: auto; padding: 8px; font-size: 12px;
+	background: linear-gradient(160deg, #0d1a38, #162a55 50%, #0a1430); border: 2px solid #7d6422;
+}
+.tab-content .row { display: flex; flex-direction: column; margin-bottom: 8px; overflow-wrap: anywhere; }
+.tab-content .k { color: #c9a23c; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.bar-btn { padding: 8px 0; border: 2px solid #7d6422; background: #17243f; color: #e8dcae; font-size: 16px; cursor: pointer; }
+.bar-btn:hover { border-color: #f2d56b; background: #22355c; }
+canvas { touch-action: none; }
