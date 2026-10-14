@@ -66,12 +66,19 @@ async function download(url: string, onProgress: (pct?: number) => void): Promis
 async function fetchMap(info: MapInfo, onProgress: (pct?: number) => void): Promise<MapData>
 {
 	const file = info.u.split("/").pop()!;
-	const sources = [MAP_BASE + info.u, new URL(`maps/${file}`, document.baseURI).href];
+	const local = (name: string) => new URL(`maps/${name}`, document.baseURI).href;
+	// the base64 variant exists for hosts that only serve text files
+	const sources = [MAP_BASE + info.u, local(file), local(file + ".b64.json")];
 	let lastError: unknown;
 
 	for(const url of sources) {
 		try {
-			return parseMap(await download(url, onProgress));
+			const bytes = await download(url, onProgress);
+			if(url.endsWith(".b64.json")) {
+				const bin = atob(JSON.parse(new TextDecoder().decode(bytes)));
+				return parseMap(Uint8Array.from(bin, c => c.charCodeAt(0)));
+			}
+			return parseMap(bytes);
 		} catch(e) {
 			lastError = e;
 		}
